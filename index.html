@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GI Quiz — Dark Static App (Final)</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --card:#0f1724;
+    --muted:#94a3b8;
+    --accent:#06b6d4;
+    --good:#10b981;
+    --bad:#ef4444;
+    --text:#e6eef6;
+    --mono:#cbd5e1;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--text)}
+  .container{max-width:980px;margin:28px auto;padding:22px}
+  .header{display:flex;align-items:center;gap:16px}
+  .header h1{margin:0;font-size:28px;font-weight:800}
+  .small{font-size:15px;color:var(--muted);font-weight:700}
+  .grid{display:grid;gap:14px}
+  .two-col{grid-template-columns:1fr 1fr}
+  .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 24px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.02)}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", monospace; background:transparent; padding:12px; border-radius:8px; color:var(--mono); font-weight:800; font-size:22px; white-space:pre-wrap}
+  .btn{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);color:var(--text);font-weight:800;cursor:pointer}
+  .btn.accent{background:linear-gradient(180deg,var(--accent),rgba(6,182,212,0.8));color:#022;box-shadow:0 6px 18px rgba(6,182,212,0.12)}
+  .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.04);}
+  input[type="number"]{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:#0b1220;color:var(--text);width:220px;font-weight:800;font-size:18px}
+  .log-item{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:10px}
+  .scorebox{font-size:20px;font-weight:800;color:var(--accent)}
+  footer{margin-top:18px;color:var(--muted);font-size:13px}
+  .controls-row{display:flex;gap:12px;align-items:center}
+  .hint{margin-top:10px;color:var(--muted);font-weight:700;display:none}
+  .label-pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);font-weight:700}
+  .scoreboard{margin-left:auto;text-align:right}
+  .scoreboard .big{font-size:18px;font-weight:900;color:var(--good)}
+  .scoreboard .small{font-size:13px;color:var(--muted);font-weight:700}
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div>
+        <h1>General Intelligence — Number Rules</h1>
+        <!-- header descriptive line removed as requested -->
+      </div>
+      <div class="scoreboard card" style="padding:10px 14px;border-radius:10px">
+        <div class="big" id="sb_ratio">0 / 0</div>
+        <div class="small" id="sb_percent">0%</div>
+        <div style="margin-top:8px">
+          <button id="resetScoreboard" class="btn">Reset scoreboard</button>
+        </div>
+      </div>
+    </header>
+
+    <main style="margin-top:16px">
+      <section id="controls" class="grid two-col">
+        <div class="card">
+          <div class="controls-row">
+            <button id="startFull" class="btn accent">Start Full Test</button>
+            <button id="randomQ" class="btn ghost">Random Question</button>
+            <button id="toggleHint" class="btn">Show Hint</button>
+            <div class="label-pill" id="modeLabelTop">Mode: Idle</div>
+          </div>
+          <div style="margin-top:12px" class="small">Full Test runs through all 13 types (2 rounds). Random Question picks one question from any type.</div>
+        </div>
+
+        <div class="card">
+          <div style="margin-bottom:10px" class="small">Practice — pick a type (1 to 13)</div>
+          <div id="practiceButtons" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+        </div>
+
+        <div style="grid-column:1 / -1">
+          <button id="reset" class="btn">Reset</button>
+        </div>
+      </section>
+
+      <section id="questionArea" style="margin-top:18px; display:none">
+        <div class="card">
+          <div class="controls-row" style="align-items:flex-start">
+            <div id="modeLabel" class="small" style="margin-right:8px"></div>
+            <div id="typeLabel" class="label-pill"></div>
+            <div style="margin-left:auto" id="scoreBox" class="scorebox">0 / 0</div>
+          </div>
+
+          <div id="prompt" class="mono" style="margin-top:12px"></div>
+
+          <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+            <input id="answerInput" type="number" placeholder="Enter answer"/>
+            <button id="submitBtn" class="btn accent">Submit</button>
+            <div id="correctMark" style="margin-left:8px;font-weight:900"></div>
+          </div>
+
+          <div id="hint" class="hint"></div>
+        </div>
+      </section>
+
+      <section style="margin-top:18px">
+        <div class="card">
+          <strong style="font-size:18px;font-weight:800">Activity Log</strong>
+          <div id="log" style="margin-top:12px"></div>
+        </div>
+      </section>
+
+      <footer>
+        If any rule still behaves differently from your Java file, tell me the rule number and I'll match it exactly.
+      </footer>
+    </main>
+  </div>
+
+<script>
+(function(){
+  // State
+  let mode = null; // 'full' or 'practice' or 'random'
+  let practiceType = 1;
+  let log = [];
+  let current = null; // {type, promptText, answer, hint}
+  let score = {correct:0, total:0}; // current session score
+  let roundsLeft = 2;
+  let practiceCountLeft = 3;
+  let hintVisible = false;
+
+  // Scoreboard (cumulative across session)
+  let scoreboard = {correct:0, total:0};
+
+  // Elements
+  const el = {
+    startFull: document.getElementById('startFull'),
+    randomQ: document.getElementById('randomQ'),
+    toggleHint: document.getElementById('toggleHint'),
+    practiceButtons: document.getElementById('practiceButtons'),
+    reset: document.getElementById('reset'),
+    resetScoreboard: document.getElementById('resetScoreboard'),
+    questionArea: document.getElementById('questionArea'),
+    modeLabel: document.getElementById('modeLabel'),
+    modeLabelTop: document.getElementById('modeLabelTop'),
+    typeLabel: document.getElementById('typeLabel'),
+    prompt: document.getElementById('prompt'),
+    answerInput: document.getElementById('answerInput'),
+    submitBtn: document.getElementById('submitBtn'),
+    hint: document.getElementById('hint'),
+    scoreBox: document.getElementById('scoreBox'),
+    log: document.getElementById('log'),
+    correctMark: document.getElementById('correctMark'),
+    sb_ratio: document.getElementById('sb_ratio'),
+    sb_percent: document.getElementById('sb_percent'),
+  };
+
+  const rand = (min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+
+  // helper to ensure unique three rows
+  function uniqueThree(makeRow){
+    let a = makeRow();
+    let b = makeRow();
+    let c = makeRow();
+    function key(r){ return JSON.stringify(r); }
+    const maxTries = 20;
+    let tries = 0;
+    while((key(a) === key(b) || key(a) === key(c) || key(b) === key(c)) && tries < maxTries){
+      a = makeRow(); b = makeRow(); c = makeRow(); tries++;
+    }
+    if(key(a) === key(b) || key(a) === key(c) || key(b) === key(c)){
+      // force change c
+      let d = makeRow();
+      let inner = 0;
+      while((key(d) === key(a) || key(d) === key(b)) && inner < 100){ d = makeRow(); inner++; }
+      c = d;
+    }
+    return [a,b,c];
+  }
+
+  // Generators (same logic as before)
+  function gen_diffOfSqrt_rows(){ function make(){ const n1=rand(2,9); const n2=rand(2,11); return {col1:n1*n1, col2:n2*n2, col3:Math.abs(n1-n2), answer:Math.abs(n1-n2)}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:'Answer = |√first - √second|', type:1}; }
+  function gen_sumOfSqrt_rows(){ function make(){ const base1=rand(2,9), base2=rand(2,11); const n1=base1+3, n2=base2+2; return {col1:n1*n1, col2:n2*n2, col3:Math.abs(n1+n2), answer:Math.abs(n1+n2)}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:'Compute (√A + √B)', type:2}; }
+  function gen_type1_rows(a){ function make(){ const n1=rand(2,9); const n2=rand(2,11); const mid=(n1 + a) * n2; return {col1:n1, col2:mid, col3:n2, answer:n2}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n2 = (n1 + ${a}) * n3`, type:3}; }
+  function gen_type1n_rows(a){ function make(){ const n1=rand(2,9); const n2=rand(2,11); const mid=(n1 - a) * n2; return {col1:n1, col2:mid, col3:n2, answer:n2}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n2 = (n1 - ${a}) * n3`, type:4}; }
+  function gen_type2_rows(a){ function make(){ const n1=rand(2,9); const n3=rand(2,11); const mid=n1 * a * n3; return {col1:n1, col2:mid, col3:n3, answer:n3}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n3 where n2 = n1 * ${a} * n3`, type:5}; }
+  function gen_type3_rows(a){ function make(){ const n1=rand(2,9); const n3=rand(2,11); const mid=n1*a + (a+1)*n3; return {col1:n1, col2:mid, col3:n3, answer:n3}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n3 where n2 = n1*${a} + n3*${a+1}`, type:6}; }
+  function gen_type4_rows(a){ function make(){ const n1=rand(2,9); const n3=rand(2,11); const mid=n1 * n3 + a; return {col1:n1, col2:mid, col3:n3, answer:n3}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n3 where n2 = n1*n3 + ${a}`, type:7}; }
+  function gen_type5_rows(a){ function make(){ const num2=rand(2,11); const n1=num2*a; const z=n1*num2 + Math.floor(n1/num2); return {col1:n1, col2:num2, col3:z, answer:z}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:'n3 = n1*n2 + n1/n2', type:8}; }
+  function gen_type6_rows(a,b){ function make(){ const n1=rand(2,9); const n2=rand(2,11); const z=Math.abs((n1 - n2) * a) + b; return {col1:n1, col2:n2, col3:z, answer:z}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n3 - ${b} = |n1 - n2| * ${a}`, type:9}; }
+  function gen_type7_rows(a,b){ function make(){ const n1=rand(2,9); const n2=rand(2,11); const left=n1*a; const right=n2*b; const z=Math.abs((n1 + n2) * (n1 - n2)); return {col1:left, col2:right, col3:z, answer:z}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:'n3 = (n1)^2 - (n2)^2', type:10}; }
+  function gen_sumOfExponents_rows(){ function make(){ const n=rand(2,9); const z=n + n*n + n*n*n; return {col1:n, col2:n*n, col3:z, answer:z}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:'n + n^2 + n^3', type:11}; }
+  function gen_sumOfQsExponents_rows(a,b){ function make(){ const n=rand(2,9); const left=n*a; const z=Math.pow(n,b); return {col1:left, col2:n, col3:z, answer:z}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n^${b}`, type:12}; }
+  function gen_type8_rows(a,b){ function make(){ const n=rand(2,9); const z=n*a - b; return {col1:n, col2:n*a, col3:z, answer:z}; } const [e1,e2,q] = uniqueThree(make); return {promptText: `${e1.col1}   ${e1.col2}   ${e1.col3}\n${e2.col1}   ${e2.col2}   ${e2.col3}\n${q.col1}   ${q.col2}   ?`, answer:q.answer, hint:`n2 = n1*${a} - ${b}`, type:13}; }
+
+  function generateQuestionForType(t){
+    switch(t){
+      case 1: return gen_diffOfSqrt_rows();
+      case 2: return gen_sumOfSqrt_rows();
+      case 3: return gen_type1_rows(rand(2,6));
+      case 4: return gen_type1n_rows(rand(2,6));
+      case 5: return gen_type2_rows(rand(2,6));
+      case 6: return gen_type3_rows(rand(2,6));
+      case 7: return gen_type4_rows(rand(2,6));
+      case 8: return gen_type5_rows(rand(2,6));
+      case 9: return gen_type6_rows(rand(2,6), rand(2,7));
+      case 10: return gen_type7_rows(rand(2,6), rand(2,7));
+      case 11: return gen_sumOfExponents_rows();
+      case 12: return gen_sumOfQsExponents_rows(rand(2,6), rand(2,3));
+      case 13: return gen_type8_rows(rand(2,6), rand(2,7));
+      default: return generateQuestionForType(rand(1,13));
+    }
+  }
+
+  // UI helpers
+  function renderPracticeButtons(){
+    el.practiceButtons.innerHTML = '';
+    for(let i=1;i<=13;i++){
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.textContent = 'Type ' + i;
+      b.addEventListener('click', ()=> startPractice(i));
+      el.practiceButtons.appendChild(b);
+    }
+  }
+
+  function showQuestionArea(){ el.questionArea.style.display = 'block'; }
+  function hideQuestionArea(){ el.questionArea.style.display = 'none'; }
+
+  function startFullTest(){
+    mode = 'full';
+    el.modeLabelTop.textContent = 'Mode: Full Test';
+    score = {correct:0, total:0};
+    roundsLeft = 2;
+    log = [];
+    current = null;
+    showQuestionArea();
+    nextFullQuestion(0);
+    updateScore();
+    renderLog();
+  }
+
+  function nextFullQuestion(innerIndex){
+    if(roundsLeft <= 0){ mode = null; hideQuestionArea(); return; }
+    if(innerIndex >= 13){ roundsLeft--; if(roundsLeft > 0) nextFullQuestion(0); else { mode = null; hideQuestionArea(); } return; }
+    const t = innerIndex + 1;
+    const q = generateQuestionForType(t);
+    current = q;
+    el.prompt.textContent = q.promptText;
+    el.modeLabel.textContent = 'Mode: Full Test — Type ' + q.type;
+    el.typeLabel.textContent = 'Type ' + q.type;
+    el.answerInput.value = '';
+    el.correctMark.textContent = '';
+    el.hint.style.display = hintVisible ? 'block' : 'none';
+    el.hint.textContent = q.hint ? q.hint : '';
+  }
+
+  function submitAnswer(){
+    if(!current) return;
+    const userAns = Number(el.answerInput.value);
+    const correctAns = Number(current.answer);
+    const right = userAns === correctAns;
+    score.correct += right ? 1 : 0;
+    score.total += 1;
+    // Update scoreboard cumulative totals
+    scoreboard.total += 1;
+    if(right) scoreboard.correct += 1;
+    log.push({ prompt: current.promptText, userAns, correctAns, right, type: current.type, hint: current.hint || '' });
+    updateScore();
+    updateScoreboard();
+    renderLog();
+    el.correctMark.textContent = right ? '✅' : '❌';
+
+    if(mode === 'practice'){
+      practiceCountLeft--;
+      if(practiceCountLeft <= 0){ mode = null; hideQuestionArea(); return; }
+      else {
+        const q = generateQuestionForType(practiceType);
+        current = q;
+        el.prompt.textContent = q.promptText;
+        el.typeLabel.textContent = 'Type ' + q.type;
+        el.answerInput.value = '';
+        el.hint.textContent = q.hint || '';
+        el.hint.style.display = hintVisible ? 'block' : 'none';
+        return;
+      }
+    } else if(mode === 'full'){
+      const nextIndex = (current.index || 0) + 1;
+      if(nextIndex < 13) nextFullQuestion(nextIndex);
+      else { roundsLeft--; if(roundsLeft > 0) nextFullQuestion(0); else { mode = null; hideQuestionArea(); } }
+    } else if(mode === 'random'){
+      const q = generateQuestionForType(rand(1,13));
+      current = q;
+      el.prompt.textContent = q.promptText;
+      el.typeLabel.textContent = 'Type ' + q.type;
+      el.answerInput.value = '';
+      el.hint.textContent = q.hint || '';
+      el.hint.style.display = hintVisible ? 'block' : 'none';
+    }
+  }
+
+  function startPractice(type){
+    mode = 'practice';
+    practiceType = type;
+    el.modeLabelTop.textContent = 'Mode: Practice';
+    score = {correct:0, total:0};
+    practiceCountLeft = 3;
+    log = [];
+    const q = generateQuestionForType(type);
+    current = q;
+    showQuestionArea();
+    el.prompt.textContent = q.promptText;
+    el.modeLabel.textContent = 'Mode: Practice — Type ' + q.type;
+    el.typeLabel.textContent = 'Type ' + q.type;
+    el.answerInput.value = '';
+    el.hint.textContent = q.hint || '';
+    el.hint.style.display = hintVisible ? 'block' : 'none';
+    updateScore();
+    renderLog();
+    el.correctMark.textContent = '';
+  }
+
+  function startRandomQuestion(){
+    mode = 'random';
+    el.modeLabelTop.textContent = 'Mode: Random';
+    const q = generateQuestionForType(rand(1,13));
+    current = q;
+    showQuestionArea();
+    el.prompt.textContent = q.promptText;
+    el.modeLabel.textContent = 'Mode: Random — Type ' + q.type;
+    el.typeLabel.textContent = 'Type ' + q.type;
+    el.answerInput.value = '';
+    el.hint.textContent = q.hint || '';
+    el.hint.style.display = hintVisible ? 'block' : 'none';
+    el.correctMark.textContent = '';
+  }
+
+  function resetAll(){
+    mode = null;
+    current = null;
+    el.answerInput.value = '';
+    score = {correct:0, total:0};
+    log = [];
+    roundsLeft = 2;
+    practiceCountLeft = 3;
+    hideQuestionArea();
+    updateScore();
+    renderLog();
+    el.modeLabelTop.textContent = 'Mode: Idle';
+  }
+
+  function toggleHint(){
+    hintVisible = !hintVisible;
+    el.hint.style.display = hintVisible ? 'block' : 'none';
+    el.toggleHint.textContent = hintVisible ? 'Hide Hint' : 'Show Hint';
+  }
+
+  function resetScoreboard(){
+    scoreboard = {correct:0, total:0};
+    updateScoreboard();
+  }
+
+  function updateScore(){ el.scoreBox.textContent = score.correct + ' / ' + score.total; }
+
+  function updateScoreboard(){
+    el.sb_ratio.textContent = scoreboard.correct + ' / ' + scoreboard.total;
+    const pct = scoreboard.total === 0 ? 0 : Math.round((scoreboard.correct / scoreboard.total) * 100);
+    el.sb_percent.textContent = pct + '%';
+  }
+
+  function renderLog(){
+    el.log.innerHTML = '';
+    for(let i=log.length-1;i>=0;i--){
+      const item = log[i];
+      const div = document.createElement('div');
+      div.className = 'log-item';
+      const status = item.right ? '<span style="color:var(--good)">✅</span>' : '<span style="color:var(--bad)">❌</span>';
+      let html = '<div class="mono">'+item.prompt.replace(/\n/g, '<br>')+'</div>';
+      html += '<div class="small">Your answer: '+item.userAns+' — Correct: '+item.correctAns+' — '+status+'</div>';
+      if(!item.right && item.hint){
+        html += '<div class="small" style="color:var(--muted);margin-top:6px;">Hint: '+item.hint+'</div>';
+      }
+      div.innerHTML = html;
+      el.log.appendChild(div);
+    }
+  }
+
+  // wire events
+  el.startFull.addEventListener('click', startFullTest);
+  el.randomQ.addEventListener('click', startRandomQuestion);
+  el.toggleHint.addEventListener('click', toggleHint);
+  el.submitBtn.addEventListener('click', submitAnswer);
+  el.reset.addEventListener('click', resetAll);
+  el.resetScoreboard.addEventListener('click', resetScoreboard);
+  el.answerInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') submitAnswer(); });
+
+  // init
+  renderPracticeButtons();
+  updateScore();
+  updateScoreboard();
+  renderLog();
+})();
+</script>
+</body>
+</html>
